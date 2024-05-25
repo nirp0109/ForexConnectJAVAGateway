@@ -12,6 +12,7 @@ public class FXCMForexConnectFacade {
 	private Object lock = new Object();
 	private FXCMForexConnectFacade instance;
 	private O2GSession session;
+	private SessionStatusListener listener;
 
 	public static void main(String[] args) {
 		GatewayServer gatewayServer = new GatewayServer(new FXCMForexConnectFacade());
@@ -53,7 +54,7 @@ public class FXCMForexConnectFacade {
 	public 	O2GSession login(String userName, String password, String url, String connectionType) {
 		O2GSession session = O2GTransport.createSession();
         session.useTableManager(O2GTableManagerMode.YES, null);
-        SessionStatusListener listener = new SessionStatusListener();
+        listener = new SessionStatusListener();
         session.subscribeSessionStatus(listener);
         try {
             session.login(userName, password, url, connectionType);
@@ -100,6 +101,9 @@ public class FXCMForexConnectFacade {
 		ResponseListener responseListener = new ResponseListener(session);
         session.subscribeResponse(responseListener);
         O2GRequestFactory factory = session.getRequestFactory();
+		if (factory == null) {
+			return new ArrayList<Map<String, Object>>();
+		}
         O2GRequest getAccounts = factory.createRefreshTableRequest(O2GTableType.ACCOUNTS);
         ArrayList result = new ArrayList<ArrayList<Map<String, Object>>> ();
         //implement the callback to get the account information
@@ -233,6 +237,14 @@ public class FXCMForexConnectFacade {
 			return null;
 		}
 
+	}
+	
+	public boolean isSessionConnected() {
+		if(this.listener != null) {
+			return this.listener.isConnected();
+		} else {
+			return false;
+		}
 	}
 	
 	/**
